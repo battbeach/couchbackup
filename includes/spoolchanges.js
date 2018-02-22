@@ -17,6 +17,7 @@ const fs = require('fs');
 const liner = require('./liner.js');
 const change = require('./change.js');
 const error = require('./error.js');
+const zlib = require('zlib');
 const debug = require('debug')('couchbackup:spoolchanges');
 
 /**
@@ -71,7 +72,9 @@ module.exports = function(db, log, bufferSize, ee, callback) {
         changesRequest.abort();
         callback(error.convertResponseError(resp));
       } else {
-        resp.pipe(liner())
+        var respStream = (resp.headers['content-encoding'] === 'gzip')
+          ? resp.pipe(zlib.createGunzip()) : resp;
+        respStream.pipe(liner())
           .on('error', function(err) {
             callback(err);
           })
